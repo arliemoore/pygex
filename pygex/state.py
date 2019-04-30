@@ -16,9 +16,3 @@ class state:
     def set_out1(self, s):
         self.out1 = s
 
-    def __repr__(self):
-        return "s[%s %s %s %s]" % (self.char, self.out, self.out1, self.last_list)
-    
-    def __str__(self):
-        return "s[%s %s %s %s]" % (self.char, self.out, self.out1, self.last_list)
-

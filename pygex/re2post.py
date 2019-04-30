@@ -1,5 +1,15 @@
 from Stack import Stack
 
+'''
+    These methods convert a regex to postfix notation
+
+    Original Java code can be found below. This is a remake
+    of the code in Python. 
+    https://gist.github.com/gmenard/6161825
+
+'''
+
+''' Operators precedence map '''
 precedenceMap = {
     '(':1,
     '|':2,
@@ -10,6 +20,9 @@ precedenceMap = {
     '^':5,
 }
 
+'''
+    Get character precedences
+'''
 def getPrecedence(char):
     try:
         precedence = precedenceMap[char]
@@ -17,6 +30,10 @@ def getPrecedence(char):
         precedence = 6
     return precedence
 
+'''
+    Transform regular expression by inserting 
+    a '.' as explicit concatenation
+'''
 def formatRegEx(regex):
     res = ''
     allOperators = ['|', '?', '+', '*', '^']
@@ -33,7 +50,10 @@ def formatRegEx(regex):
     res = res + regex[len(regex) - 1]
 
     return res
-    
+
+'''
+    Convert regular expression from infix to postfix notation using
+'''
 def re2post(regex):
     postfix = ''
 
@@ -68,3 +88,5 @@ def re2post(regex):
         postfix = postfix + stack.pop()
     
     return postfix
+
+
