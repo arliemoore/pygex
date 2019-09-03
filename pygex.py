@@ -1,20 +1,16 @@
 
 from nfa import nfa
-import re
-import time
-
-'''
-https://swtch.com/~rsc/regexp/regexp1.html
-'''
+import re, time
 
 class pygex:
 
     def __init__(self, regex, log = False):
         self.regex = regex
-        self.nfa = nfa(self.regex)
+        self.nfa = nfa(self.regex, log)
 
     def match(self, str):
         return self.nfa.match(str) 
+
 
 if __name__ == '__main__':
     
@@ -22,7 +18,7 @@ if __name__ == '__main__':
     str1 = 'hello world'
 
     t0 = time.time()
-    gex = pygex(regex)
+    gex = pygex(regex, log=True)
     matched = gex.match(str1)
     total = time.time() - t0
     print((str(matched) + " in " + str(total)))
@@ -35,6 +31,7 @@ if __name__ == '__main__':
         print(("True in " + str(total)))
     else:
         print(("False in " + str(total)))
+
 
 
 
