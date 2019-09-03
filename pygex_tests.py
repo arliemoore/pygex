@@ -39,15 +39,21 @@ tests = {
             'one hello'
         ]
     },
-    'test_zeroOrOne_true':{
+    'test_zeroOrOne1_true':{
         'regex': '(hello|goodbye)? world',
         'str': [
             'hello world',
             ' world',
             'goodbye world'
         ]
+    },
+    'test_zeroOrOne2_true':{
+        'regex': '((pygex)?|a?)',
+        'str': [
+            'pygex',
+            'a'
+        ]
     }
-
 }
 
 class pygex_tests(unittest.TestCase):
@@ -74,7 +80,13 @@ class pygex_tests(unittest.TestCase):
             self.assertTrue(gex.match(str), msg=('regex="' + test['regex']  + '" : str="' + str + '"'))
 
     def test_zeroOrOne_true(self):
-        test = tests['test_zeroOrOne_true']
+        test = tests['test_zeroOrOne1_true']
+        gex = pygex.pygex(test['regex'])
+        for str in test['str']:
+            self.assertTrue(gex.match(str), msg=('regex="' + test['regex']  + '" : str="' + str + '"'))
+
+    def test_zeroOrOne2_true(self):
+        test = tests['test_zeroOrOne2_true']
         gex = pygex.pygex(test['regex'])
         for str in test['str']:
             self.assertTrue(gex.match(str), msg=('regex="' + test['regex']  + '" : str="' + str + '"'))
