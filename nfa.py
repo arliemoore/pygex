@@ -1,7 +1,4 @@
-from state import state
-from frag import frag
 from re2post import re2post
-from state_list import state_list
 from Stack import Stack
 
 class nfa:
@@ -135,3 +132,46 @@ class nfa:
                 self._print(s2, s2.out1, depth + 1)
         elif s2 != None:
             self._print(s2, s2.out1, depth + 1)
+
+
+'''
+
+'''
+class state:
+    def __init__(self, char, out, out1):
+        # 1. c < 256 ::: Normal -> out
+        #   - Normal State that points to a single out state
+        # 2. c = 256 ::: Split -> out & out1
+        #   - Split State that points to two possible out states
+        # 3. c = 257 ::: Matched
+        #   - Matched State
+        self.char = char
+        self.out = out
+        self.out1 = out1
+        self.last_list = -1
+
+    def set_out(self, s):
+        self.out = s
+
+    def set_out1(self, s):
+        self.out1 = s
+
+'''
+
+'''
+class frag:
+    def __init__(self, start_state, out_states):
+        #Points to start state for the fragment
+        self.start_state = start_state
+        
+        #List of states that are not yet connected to anything.
+        #These are dangling arrows in the NFA fragment
+        self.out_states = out_states
+
+'''
+
+'''
+class state_list:
+    def __init__(self):
+        self.n = 0
+        self.states = []
