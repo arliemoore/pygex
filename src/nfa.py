@@ -1,15 +1,11 @@
-from re2post import re2post
 from Stack import Stack
 
 class nfa:
     
-    def __init__(self, regex, log = False):
+    def __init__(self, postfix, log = False):
         self.listId = 0
         self.log = log
-        
-        #Get postfix 
-        postfix = re2post(regex)
-        
+                      
         #Create nfa
         self.head_state = self._gen_nfa(postfix)
     
@@ -87,7 +83,9 @@ class nfa:
             t = clist
             clist = nlist
             nlist = t
-        return self._is_match(clist)
+            if self._is_match(clist):
+                return True      
+        return False
     
     def _start_list(self, s, l):
         self.listId = self.listId + 1
