@@ -16,13 +16,11 @@ class nfa:
     '''
     def push(self, char):
         frag_stack = self.fragment_stack
-        self._log("char = " + char)
-        escaped = False
-        #Escape special character and make it a literal
-        if char == '\\':
-            escaped = True
+        self._log("char = " + char.object_string())
+        escaped = char.is_escaped()
+        special = char.is_special_char()
         #Catenation
-        elif char == '.' and not escaped:
+        if char == '.' and not escaped and not special:
             e2 = frag_stack.pop()
             e1 = frag_stack.pop()
             self._patch(e1.out_states, e2.start_state)
@@ -50,13 +48,8 @@ class nfa:
             s = state('split', e.start_state, None)
             self._patch(e.out_states, s)
             frag_stack.push(frag(e.start_state, self._list1(s.set_out1)))
-        #Any character
-        elif char == '.':
-            s = state(char, None, None)
-            frag_stack.push(frag(s, self._list1(s.set_out)))
         #Literal characters
         else:
-            escaped = False
             s = state(char, None, None)
             frag_stack.push(frag(s, self._list1(s.set_out)))
     
@@ -125,6 +118,9 @@ class nfa:
         self.listId = self.listId + 1
         nlist.n = 0
         for state in clist.states:
+            #Special character '.' that can be anything
+            if state.char == '.' and state.char.is_special_char():
+                self._add_state(nlist, state.out)
             if state.char == char:
                 self._add_state(nlist, state.out)
 
@@ -189,3 +185,35 @@ class state_list:
     def __init__(self):
         self.n = 0
         self.states = []
+
+
+'''
+Custom string class that allows precedence values to be set
+'''
+class p_str(str):
+    def __init__(self, char):
+        super().__init__()
+        self.precedence = None
+        self.escaped = False
+        self.special_char = False
+
+    def set_precedence(self, pres):
+        self.precedence = pres
+
+    def get_precedence(self):
+        return self.precedence
+    
+    def set_escaped(self, esc):
+        self.escaped = esc
+    
+    def is_escaped(self):
+        return self.escaped
+
+    def set_special_character(self, special_char):
+        self.special_char = special_char
+
+    def is_special_char(self):
+        return self.special_char
+
+    def object_string(self):
+        return ("p_str( '" + super().__str__() + "' : esc='" + str(self.escaped) + "' : spec='" + str(self.special_char) + "' : pres='" + str(self.precedence) + "' )")
