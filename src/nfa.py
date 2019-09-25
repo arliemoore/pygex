@@ -1,54 +1,70 @@
 from Stack import Stack
 
+'''
+Thompson NFA
+'''
 class nfa:
     
-    def __init__(self, postfix, log = False):
+    def __init__(self, log = False):
         self.listId = 0
         self.log = log
-                      
-        #Create nfa
-        self.head_state = self._gen_nfa(postfix)
+        self.fragment_stack = Stack()
+        self.head_state = None
     
     '''
     Generates an NFA and must take in a valid postfix string
     '''
-    def _gen_nfa(self, postfix):
-        frag_stack = Stack()
-        split = 'split'
-        match = 'match'
+    def push(self, char):
+        frag_stack = self.fragment_stack
+        self._log("char = " + char)
+        escaped = False
+        #Escape special character and make it a literal
+        if char == '\\':
+            escaped = True
+        #Catenation
+        elif char == '.' and not escaped:
+            e2 = frag_stack.pop()
+            e1 = frag_stack.pop()
+            self._patch(e1.out_states, e2.start_state)
+            frag_stack.push(frag(e1.start_state, e2.out_states))
+        #Alternation
+        elif char == '|' and not escaped:
+            e2 = frag_stack.pop()
+            e1 = frag_stack.pop()
+            s = state('split', e1.start_state, e2.start_state)
+            frag_stack.push(frag(s, self._append(e1.out_states, e2.out_states)))
+        #Zero or one
+        elif char == '?' and not escaped:
+            e = frag_stack.pop()
+            s = state('split', e.start_state, None)
+            frag_stack.push(frag(s, self._append(e.out_states, self._list1(s.set_out1))))
+        #Zero or more
+        elif char == '*' and not escaped:
+            e = frag_stack.pop()
+            s = state('split', e.start_state, None)
+            self._patch(e.out_states, s)
+            frag_stack.push(frag(s, self._list1(s.set_out1)))
+        #One or more
+        elif char == '+' and not escaped:
+            e = frag_stack.pop()
+            s = state('split', e.start_state, None)
+            self._patch(e.out_states, s)
+            frag_stack.push(frag(e.start_state, self._list1(s.set_out1)))
+        #Any character
+        elif char == '.':
+            s = state(char, None, None)
+            frag_stack.push(frag(s, self._list1(s.set_out)))
+        #Literal characters
+        else:
+            escaped = False
+            s = state(char, None, None)
+            frag_stack.push(frag(s, self._list1(s.set_out)))
+    
 
-        for char in postfix:
-            self._log("char = " + char)
-            if char == '.':
-                e2 = frag_stack.pop()
-                e1 = frag_stack.pop()
-                self._patch(e1.out_states, e2.start_state)
-                frag_stack.push(frag(e1.start_state, e2.out_states))
-            elif char == '|':
-                e2 = frag_stack.pop()
-                e1 = frag_stack.pop()
-                s = state(split, e1.start_state, e2.start_state)
-                frag_stack.push(frag(s, self._append(e1.out_states, e2.out_states)))
-            elif char == '?':
-                e = frag_stack.pop()
-                s = state(split, e.start_state, None)
-                frag_stack.push(frag(s, self._append(e.out_states, self._list1(s.set_out1))))
-            elif char == '*':
-                e = frag_stack.pop()
-                s = state(split, e.start_state, None)
-                self._patch(e.out_states, s)
-                frag_stack.push(frag(s, self._list1(s.set_out1)))
-            elif char == '+':
-                e = frag_stack.pop()
-                s = state(split, e.start_state, None)
-                self._patch(e.out_states, s)
-                frag_stack.push(frag(e.start_state, self._list1(s.set_out1)))
-            else:
-                s = state(char, None, None)
-                frag_stack.push(frag(s, self._list1(s.set_out)))
-        e = frag_stack.pop()
-        self._patch(e.out_states, state(match, None, None))
-        return e.start_state
+    def finish_nfa(self):
+        e = self.fragment_stack.pop()
+        self._patch(e.out_states, state('match', None, None))
+        self.head_state = e.start_state
 
     def _list1(self, s):
         if s == None:
