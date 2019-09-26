@@ -136,15 +136,15 @@ class pygex_tests(unittest.TestCase):
     def test_any_character(self):
         self._run_dictionary('test_any_character', True)
     
-    #def test_escape_special_char(self):
-    #    self._run_dictionary('test_escape_special_char', True)
+    def test_escape_special_char(self):
+        self._run_dictionary('test_escape_special_char', True)
 
 if __name__ == '__main__':
     
     #regex = '(\\(\\)|\\|h)'
     #str1 = '()'
-    regex = '\\(\\)'
-    str1 = '()'
+    regex = '\|h'
+    str1 = '|h'
 
     #pygex
     t0 = time.time()

@@ -118,8 +118,11 @@ class parse():
                     if(c1 != '(' and c2 != ')' and c2 not in allOperators and c1 not in binaryOperators):
                         next = p_str('.')
                         self.precedence_stacker(next)
-            
+
+        #Last character always comes here  
         next = p_str(regex[len(regex) - 1])
+        if escaped:
+            next.set_escaped(True)
         self.precedence_stacker(next)
 
     '''
@@ -138,10 +141,8 @@ class parse():
         elif next == ')' and not next.is_escaped():
             while (stack.peek() != '(' and not stack.peek().is_escaped()):
                 thompson_nfa.push(stack.pop())
-            print('POP')
             stack.pop()
         else:
-            print('here')
             while stack.size() > 0:
                 peekedChar = stack.peek()
 
@@ -161,8 +162,6 @@ class parse():
     def finish_nfa(self):
         stack = self.char_stack
         thompson_nfa = self.nfa
-        
-        self._log('Finish Parsing')
         
         #Pop the rest of the characters
         #and push them into the NFA
