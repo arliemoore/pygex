@@ -1,6 +1,6 @@
 # pygex
 
-String pattern matcher coded in python that used a Thompson NFA.
+Pattern matcher coded in python that uses a Thompson NFA.
 
 ## Getting Started
 
