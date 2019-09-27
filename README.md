@@ -4,15 +4,15 @@ String pattern matcher coded in python that used a Thompson NFA.
 
 ## Getting Started
 
-'''
+```
 Needs to be updated
-'''
+```
 
 ## Running the tests
 
-'''
+```
 python -m unittest tests_pygex.py
-'''
+```
 
 ## Authors
 
