@@ -16,7 +16,7 @@ class nfa:
     '''
     def push(self, char):
         frag_stack = self.fragment_stack
-        self._log("char = " + char.object_string())
+        self._log("\t\tchar = " + char.object_string())
         escaped = char.is_escaped()
         special = char.is_special_char()
         #Catenation
@@ -216,4 +216,11 @@ class p_str(str):
         return self.special_char
 
     def object_string(self):
-        return ("p_str( '" + super().__str__() + "' : esc='" + str(self.escaped) + "' : spec='" + str(self.special_char) + "' : pres='" + str(self.precedence) + "' )")
+        escaped = 'F'
+        special = 'F'
+        if self.escaped:
+            escaped = 'T'
+        if self.special_char:
+            special = 'T'
+
+        return ("p_str( '" + super().__str__() + "' : esc='" + escaped + "' : spec='" + special + "' : pres='" + str(self.precedence) + "' )")

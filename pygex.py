@@ -97,64 +97,63 @@ class parse():
                 c2 = regex[i+1]
                 
                 #Escapes Special Character
-                if c1 == '\\' and c2 in SPECIAL_CHARS:
+                if c1 == '\\' and not escaped:
                     escaped = True
-                elif escaped and c1 in SPECIAL_CHARS:
-                    next = p_str(c1)
-                    next.set_escaped(True)
-                    self.precedence_stacker(next)
-                    escaped = False
-                    if(c2 not in allOperators and c1 not in binaryOperators):
-                        next = p_str('.')
-                        self.precedence_stacker(next)
-                #Character is not escaped
                 else:
-                    next = p_str(c1)
+                    cur = p_str(c1)
                     #Check if character is a special character
-                    if next in SPECIAL_CHARS:
-                        next.set_special_character(True)
-                    self.precedence_stacker(next)
-                    #Concatnation of two literals
-                    if(c1 != '(' and c2 != ')' and c2 not in allOperators and c1 not in binaryOperators):
-                        next = p_str('.')
-                        self.precedence_stacker(next)
+                    if cur in SPECIAL_CHARS:
+                        cur.set_special_character(True)
+                    cur.set_escaped(escaped)
+                    self.precedence_stacker(cur)
+                    
+                    ''' 
+                        Concatnation if statement - Only concat if...
+                        1. <FILL IN>
+                        2. Current character is escaped AND next character is not a special character. 
+                    '''
+                    if (c1 != '('  and c2 != ')' and c2 not in allOperators and c1 not in binaryOperators) \
+                                or (cur.is_escaped() and c2 not in SPECIAL_CHARS):
+                        cur = p_str('.')
+                        self.precedence_stacker(cur)
+                    
+                    escaped = False
 
         #Last character always comes here  
-        next = p_str(regex[len(regex) - 1])
+        cur = p_str(regex[len(regex) - 1])
         if escaped:
-            next.set_escaped(True)
-        self.precedence_stacker(next)
+            cur.set_escaped(True)
+        if cur in SPECIAL_CHARS:
+            cur.set_special_character(True)
+        
+        self.precedence_stacker(cur)
 
     '''
         Convert regular expression from infix to postfix notation using
     '''
-    def precedence_stacker(self, next):
+    def precedence_stacker(self, char):
         stack = self.char_stack
         thompson_nfa = self.nfa
 
-        self._log((next + '    --- p_stack -> ' + str(stack)))
-        #Figure out next character precedence level
-        next.set_precedence(self.getPrecedence(next))
+        #Figure out char character precedence level
+        char.set_precedence(self.getPrecedence(char))
+        self._log((char.object_string() + ' --- p_stack -> ' + str(stack)))
             
-        if next == '(' and not next.is_escaped():
-            stack.push(next)
-        elif next == ')' and not next.is_escaped():
-            while (stack.peek() != '(' and not stack.peek().is_escaped()):
+        if char == '(' and not char.is_escaped():
+            stack.push(char)
+        elif char == ')' and not char.is_escaped():
+            while stack.peek() != '(' or (stack.peek() == '(' and stack.peek().is_escaped()):
                 thompson_nfa.push(stack.pop())
             stack.pop()
         else:
             while stack.size() > 0:
                 peekedChar = stack.peek()
-
-                #Old Implementation
-                #peekedCharPrecedence = self.getPrecedence(peekedChar)
-                #currentCharPrecedence = self.getPrecedence(next)
-                self._log(("prec check: '" + peekedChar + "'=" + str(peekedChar.get_precedence()) + "  >=  '" + next + "'=" + str(next.get_precedence())))
-                if peekedChar.get_precedence() >= next.get_precedence():
+                self._log(("prec check: '" + peekedChar + "'=" + str(peekedChar.get_precedence()) + "  >=  '" + char + "'=" + str(char.get_precedence())))
+                if peekedChar.get_precedence() >= char.get_precedence():
                     thompson_nfa.push(stack.pop())
                 else:
                     break
-            stack.push(next)
+            stack.push(char)
 
     '''
     Complete the NFA
@@ -162,7 +161,7 @@ class parse():
     def finish_nfa(self):
         stack = self.char_stack
         thompson_nfa = self.nfa
-        
+        self._log("finish_nfa")
         #Pop the rest of the characters
         #and push them into the NFA
         while stack.size() > 0:
