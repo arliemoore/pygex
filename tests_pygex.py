@@ -1,4 +1,4 @@
-import unittest, time, re
+import unittest, time, re, traceback
 from pygex import pygex
 
 '''Test Cases'''
@@ -36,6 +36,27 @@ tests = {
             'hello',
             'world',
             'one hello'
+        ]
+    },
+    'test_many_roundBrackets':{
+        'regex': '(a|b(c|(d|e)))', 
+        'str': [
+            'acd',
+            'bcd',
+            'ace',
+            'bce'
+        ]
+    },
+    #
+    # Not working
+    #
+    'test_many_roundBrackets_backwards':{
+        'regex': '(((a|b)|c)d|e)', 
+        'str': [
+            'ecb',
+            'eca'
+            #'dcb',
+            #'dca'
         ]
     },
     'test_zeroOrOne1_true':{
@@ -91,6 +112,24 @@ tests = {
             'aa()',
             '|hello'
         ]
+    },
+    'test_round_bracket':{
+        'regex': 'aa(\\()',
+        'str': [
+            'aa('
+        ]
+    }, 
+    'test_round_bracket1':{
+        'regex': 'a(\\))',
+        'str': [
+            'a)'
+        ]
+    }, 
+    'test_round_bracket2':{
+        'regex': 'a(\\()',
+        'str': [
+            'a('
+        ]
     }
 }
 
@@ -103,11 +142,14 @@ class pygex_tests(unittest.TestCase):
         test = tests[testId]
         gex = pygex(test['regex'])
         for str in test['str']:
-            if TorF:
-                self.assertTrue(gex.match(str), msg=(testId + ' : regex="' + test['regex']  + '" : str="' + str + '"'))
-            else:
-                self.assertFalse(gex.match(str), msg=(testId + ' : regex="' + test['regex']  + '" : str="' + str + '"'))
-    
+            try:
+                if TorF:
+                    self.assertTrue(gex.match(str), msg=(testId + ' : regex="' + test['regex']  + '" : str="' + str + '"'))
+                else:
+                    self.assertFalse(gex.match(str), msg=(testId + ' : regex="' + test['regex']  + '" : str="' + str + '"'))
+            except IndexError as error:
+                print((testId + ' : regex="' + test['regex']  + '" : str="' + str + '"'))
+                raise error
 
     def test_concat1_true(self):
         self._run_dictionary('test_concat1_true', True)
@@ -139,26 +181,46 @@ class pygex_tests(unittest.TestCase):
     def test_escape_special_char(self):
         self._run_dictionary('test_escape_special_char', True)
 
-if __name__ == '__main__':
+    def test_round_bracket(self):
+        self._run_dictionary('test_round_bracket', True)
+
+    def test_many_roundBrackets(self):
+        self._run_dictionary('test_many_roundBrackets', True)
+
+    def test_many_roundBrackets_backwards(self):
+        self._run_dictionary('test_many_roundBrackets_backwards', True)
+
+    def test_round_bracket1(self):
+        self._run_dictionary('test_round_bracket1', True)
     
-    #regex = '(\\(\\)|\\|h)'
-    #str1 = '()'
-    regex = '\|h'
-    str1 = '|h'
+    def test_round_bracket2(self):
+        self._run_dictionary('test_round_bracket2', True)
+
+if __name__ == '__main__':
+     
+    #Failing #2
+    regex = 'a(\\()'
+    str1 = 'a('
+    #str1 = 'zzzzzzab)cdzzzz'     #Working without the spaces
 
     #pygex
-    t0 = time.time()
-    gex = pygex(regex, log=True)
-    matched = gex.match(str1)
-    total = time.time() - t0
-    print((str(matched) + " in " + str(total)))
+    try:
+        t0 = time.time()
+        gex = pygex(regex, log=True)
+        matched = gex.match(str1)
+        total = time.time() - t0
+        print(regex + '\n' + str1)
+        print(('pygex -> ' + str(matched) + " in " + str(total)))
+    except Exception as error:
+        traceback.print_exc()
+        print('\n')
 
-    #python re
+    #python standard library - re
     t0 = time.time()
     rex = re.compile(regex)
-    matched = rex.match(str1)
+    matched = rex.findall(str1)
     total = time.time() - t0
     if matched:
-        print(("True in " + str(total)))
+        print(("re -> True in " + str(total)))
     else:
-        print(("False in " + str(total)))
+        print(("re -> False in " + str(total)))
