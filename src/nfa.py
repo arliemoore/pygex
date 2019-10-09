@@ -1,9 +1,12 @@
 from Stack import Stack
 
-'''
-Thompson NFA
-'''
 class nfa:
+    """
+        --- Thompson NFA ---
+        
+        Contains the methods to build the NFA and methods
+        to search through the NFA for matches.
+    """
     
     def __init__(self, log = False):
         self.listId = 0
@@ -11,10 +14,12 @@ class nfa:
         self.fragment_stack = Stack()
         self.head_state = None
     
-    '''
-    Generates an NFA and must take in a valid postfix string
-    '''
     def push(self, char):
+        """Push a character onto the NFA
+        
+        Arguments:
+            char {p_str} -- Single character that is added to the NFA.
+        """
         frag_stack = self.fragment_stack
         self._log("\t\tchar = " + char.object_string())
         escaped = char.is_escaped()
@@ -55,39 +60,84 @@ class nfa:
     
 
     def finish_nfa(self):
+        """
+            Completes the NFA by patching the remaining fragments as matches
+        """
         e = self.fragment_stack.pop()
         self._patch(e.out_states, state('match', None, None))
         self.head_state = e.start_state
 
     def _list1(self, s):
+        """Returns a new list
+        
+        Arguments:
+            s {state} -- either state.set_out() or state.set_out1() function reference
+        
+        Returns:
+            list -- Either an empty list, or a list with a single state function call.
+        """
         if s == None:
             return []
         else:
             return [s]
-    
-    '''
-    Appends two state_lists together
-    '''
+
     def _append(self, state_list1, state_list2):
+        """Appends two python lists of states together
+        
+        Arguments:
+            state_list1 {list} -- Object with list of states
+            state_list2 {list} -- Object with list of states
+        
+        Returns:
+            {list} -- New python list that is a combination of list1 and list2
+        """
         return state_list1 + state_list2
 
-    '''
-    Takes a list of states and patches its self.out to the state passed in. 
-    '''
     def _patch(self, state_list, s):
+        """Takes a list of states and patches its self.out to the state passed in.
+        
+        Arguments:
+            state_list {list} -- list of function calls to a states
+                state.set_out() or state.set_out1() function. 
+            s {state} -- state object that is set to other states out and out1.
+        """
         for st_func in state_list:
             st_func(s)
 
+    #########################
     '''
-        Matching Methods
+        End of Building NFA methods
+
+        Start of matching methods
     '''
+    #########################
+
     def match(self, str):
+        """Entry method to stimulate the NFA with a string and see
+            if it matches the pattern to create the NFA.
+        
+        Arguments:
+            str {string} -- String to stimulate the NFA with
+        
+        Returns:
+            Boolean -- False if the string did not match the pattern
+        """
         self._log("###\nStarting Matching\n###")
         clist = state_list()
-        start = self.head_state
         nlist = state_list()
-        clist = self._start_list(start, clist)
+        
         for char in str:
+            self._log(("match: '" + char + "'"))
+            
+            '''
+                Reset the current list of states to the head state
+                because there are no next states to look at.
+            '''
+            if len(nlist.states) <= 0 or nlist is None:
+                self._log('\t\t\t\t\t\t\t\t\tReset clist')
+                clist = state_list()
+                nlist = state_list()
+                clist = self._start_list(self.head_state, clist)
             self._step(clist, char, nlist)
             t = clist
             clist = nlist
@@ -96,13 +146,51 @@ class nfa:
                 return True      
         return False
     
+    def _step(self, clist, char, nlist):
+        """Stimulate the NFA and follow current states to potential
+            out states.
+        
+        Arguments:
+            clist {state_list} -- Current states currently in
+            char {[type]} -- Character to stimulate the NFA with
+            nlist {[type]} -- Next states that the NFA will be in after simulation
+        """
+        self.listId = self.listId + 1
+        nlist.n = 0
+        self._log(("\tstep: '" + char + "' clist:" + str(clist) + ' nlist:' + str(nlist)))
+        for state in clist.states:
+            #Special character '.' that can be anything
+            if state.char == '.' and state.char.is_special_char():
+                self._add_state(nlist, state.out)
+            if state.char == char:
+                self._add_state(nlist, state.out)
+
     def _start_list(self, s, l):
+        """Helper method, for creating new state_lists
+        
+        Arguments:
+            s {state} -- state object to put into the empty state_list
+            l {state_list} -- Empty state_list object
+        
+        Returns:
+            stae_list -- state_list containing the state passed in
+        """
         self.listId = self.listId + 1
         l.n = 0
         self._add_state(l, s)
         return l
 
     def _add_state(self, l, s):
+        """Add the state to the state_list
+        
+        Arguments:
+            s {state} -- state object to put into the state_list
+            l {state_list) -- state_list object
+        
+        Returns:
+            stae_list -- state_list containing the state passed in
+        """
+        self._log(("\t\t\t\tadd_state: '" + str(s) + "' -> " + str(l)))
         if s == None:
             return
         if s.last_list == self.listId:
@@ -114,23 +202,26 @@ class nfa:
             return
         l.states.append(s)
 
-    def _step(self, clist, char, nlist):
-        self.listId = self.listId + 1
-        nlist.n = 0
-        for state in clist.states:
-            #Special character '.' that can be anything
-            if state.char == '.' and state.char.is_special_char():
-                self._add_state(nlist, state.out)
-            if state.char == char:
-                self._add_state(nlist, state.out)
-
     def _is_match(self, clist):
+        """Check if the current states are match states
+        
+        Arguments:
+            clist {state_list} -- state_list of current states
+        
+        Returns:
+            Boolean -- False if none of the current states are a match state
+        """
         for state in clist.states:
             if state.char == 'match':
                 return True
         return False
 
     def _log(self, message):
+        """Function to log debugging information if set to do so.
+        
+        Arguments:
+            message {string} -- message to log to terminal
+        """
         if self.log is True:
             print(message)
 
@@ -144,17 +235,25 @@ class nfa:
             self._print(s2, s2.out1, depth + 1)
 
 
-'''
-
-'''
 class state:
+    """
+        state object that represents a character and has references
+            to one or two other out states.
+    """
     def __init__(self, char, out, out1):
-        # 1. c < 256 ::: Normal -> out
-        #   - Normal State that points to a single out state
-        # 2. c = 256 ::: Split -> out & out1
-        #   - Split State that points to two possible out states
-        # 3. c = 257 ::: Matched
-        #   - Matched State
+        """initionalization method for a state
+        
+        Arguments:
+            char {p_str} -- custom string which is a single character
+                1. char = p_str ::: Normal -> out
+                    - Normal State that points to a single out state
+                2. char = 'split' -> out & out1
+                    - Split State that points to two possible out states
+                3. char = 'match'
+                    - Matched State
+            out {state} -- reference to a state object
+            out1 {state} -- reference to another state object
+        """
         self.char = char
         self.out = out
         self.out1 = out1
@@ -166,10 +265,17 @@ class state:
     def set_out1(self, s):
         self.out1 = s
 
-'''
+    def __str__(self):
+        return self.char
 
-'''
+
 class frag:
+    """
+        A fragment of an NFA that has not been completed. It contains a start state
+        and some out states.
+
+        Used during building of the NFA, not used during matching.
+    """
     def __init__(self, start_state, out_states):
         #Points to start state for the fragment
         self.start_state = start_state
@@ -178,19 +284,37 @@ class frag:
         #These are dangling arrows in the NFA fragment
         self.out_states = out_states
 
-'''
 
-'''
 class state_list:
+    """An object with a list of states and an Id number
+
+        This object is only used during matching methods
+    """
     def __init__(self):
         self.n = 0
         self.states = []
 
+    def __str__(self):
+        if len(self.states) > 0:
+            s = '[' + str(self.states[0])
+            for i in range(1, len(self.states) - 1):
+                s = s + ', ' + str(i)
+            s = s + "]"
+            return s
+        return '[]'
 
-'''
-Custom string class that allows precedence values to be set
-'''
+
 class p_str(str):
+    """Custom string class that allows some custom attributes to be set
+
+        Custom Attributes:
+            1. precedence: The precedence value associated with a character
+            2. escaped: True if the character was escaped with a forward slash
+            3. special_char: True if the character is a special character
+    
+    Arguments:
+        str {string} -- Inherites from the string class
+    """
     def __init__(self, char):
         super().__init__()
         self.precedence = None
