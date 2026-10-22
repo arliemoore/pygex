@@ -234,15 +234,36 @@ class pygex_tests(unittest.TestCase):
         self.assertTrue(gex.search('a' * n))
         self.assertFalse(gex.search('a' * (n - 1)))
 
-    def test_random_patterns_agree_with_re(self):
+    def _check_random_patterns(self, **pygex_options):
         rng = random.Random(1234)
         for _ in range(500):
             regex = random_regex(rng, 4)
-            gex = Pygex(regex)
+            gex = Pygex(regex, **pygex_options)
             for _ in range(20):
                 text = random_text(rng)
                 with self.subTest(regex=regex, text=text):
                     self.assertEqual(gex.search(text), bool(re.search(regex, text)))
+
+    def test_random_patterns_agree_with_re(self):
+        self._check_random_patterns()
+
+    def test_random_patterns_agree_with_re_tiny_cache(self):
+        # With the smallest cache, it is cleared constantly mid-search
+        self._check_random_patterns(cache_size=3)
+
+    def test_cache_never_exceeds_limit(self):
+        # The DFA for this pattern has hundreds of states, far more than the limit
+        regex = '(a|b)*a(a|b)(a|b)(a|b)(a|b)(a|b)(a|b)c'
+        gex = Pygex(regex, cache_size=10)
+        rng = random.Random(99)
+        for _ in range(200):
+            text = ''.join(rng.choice('ab') for _ in range(40)) + rng.choice(['', 'c'])
+            self.assertEqual(gex.search(text), bool(re.search(regex, text)))
+            self.assertLessEqual(len(gex.nfa._cache), 10)
+
+    def test_cache_size_too_small(self):
+        with self.assertRaises(ValueError):
+            Pygex('a', cache_size=2)
 
 
 if __name__ == '__main__':

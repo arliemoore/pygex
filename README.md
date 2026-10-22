@@ -52,12 +52,17 @@ rather than being silently treated as literals.
    debugging.
 2. **Build the NFA** ([pygex/nfa.py](pygex/nfa.py)). Each postfix token pushes
    or combines NFA fragments on a stack, following Thompson's construction.
-3. **Search**. Instead of trying one path and backtracking, the NFA tracks
-   every state it could be in at once. Each character of the text moves all of
-   those states forward together, and a new attempt starts at every position
-   so the pattern can match anywhere.
+3. **Search**. Instead of trying one path and backtracking, the search tracks
+   every NFA state it could be in at once. Each character of the text moves
+   all of those states forward together, and a new attempt starts at every
+   position so the pattern can match anywhere.
+4. **Cache (lazy DFA)**. Each set of NFA states is remembered as a DFA state,
+   along with where each character leads from it. After a short warm-up, a
+   character costs a single dictionary lookup. The cache holds at most 1,000
+   DFA states by default (`Pygex(pattern, cache_size=...)`) and is cleared when
+   full, so memory stays bounded even for patterns with huge DFAs.
 
-Because step 3 never backtracks, the work per character is bounded by the
+Because the search never backtracks, the work per character is bounded by the
 number of states in the NFA.
 
 ## Performance
@@ -69,23 +74,24 @@ pattern compiled beforehand.
 
 | Pattern | pygex | re |
 |---|---|---|
-| `hello world` | 7.5 ms | 0.005 ms |
-| `(hello\|goodbye) world` | 13.3 ms | 0.05 ms |
-| `h.l+o w?orld` | 7.6 ms | 0.004 ms |
+| `hello world` | 0.65 ms | 0.005 ms |
+| `(hello\|goodbye) world` | 0.66 ms | 0.05 ms |
+| `h.l+o w?orld` | 0.66 ms | 0.004 ms |
 
 `re` is written in C and uses shortcuts like jumping straight to the first
 fixed character of the pattern. pygex is pure Python and looks at every
-character.
+character. (Before the lazy DFA cache was added, pygex took 7.5 to 13 ms here.)
 
 **Pathological patterns: pygex stays fast.** For the pattern `a?` repeated n
-times followed by `a` repeated n times, searched in a string of n `a`s:
+times followed by `a` repeated n times, searched in a string of n `a`s
+(pygex times include compiling the pattern):
 
 | n | pygex | re |
 |---|---|---|
-| 10 | 0.11 ms | 0.03 ms |
-| 16 | 0.25 ms | 1.8 ms |
-| 20 | 0.38 ms | 33 ms |
-| 24 | 0.53 ms | 586 ms |
+| 10 | 0.19 ms | 0.03 ms |
+| 16 | 0.31 ms | 1.8 ms |
+| 20 | 0.44 ms | 33 ms |
+| 24 | 0.60 ms | 584 ms |
 
 `re` backtracks, so its time roughly doubles every time n goes up by one.
 pygex's time grows linearly. This is the same reason engines like
@@ -98,8 +104,6 @@ backtracking when patterns can come from untrusted users.
 - Only reports whether a match exists, not where it is or what groups captured.
 - No anchors (`^`, `$`), character classes (`[a-z]`, `\d`) or counted
   repetition (`{2,3}`).
-- A `Pygex` object is not safe to search from several threads at once, because
-  the search records bookkeeping on the NFA's states. Use one object per thread.
 
 ## Running the tests
 
